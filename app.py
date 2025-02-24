@@ -1,54 +1,47 @@
-from flask import Flask, request, send_file, jsonify
-import yt_dlp
 import os
-import uuid
+from flask import Flask, render_template, request, send_file
+import yt_dlp
 
 app = Flask(__name__)
 
-# Directory to store temporary files
+# Folder to save downloads
 DOWNLOAD_FOLDER = "downloads"
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
-# ✅ Add this function to show a message on the home page
-@app.route('/')
-def home():
-    return "Welcome to the YouTube to MP3 API! Use the /download endpoint."
-
-def download_mp3(url):
-    """Downloads and converts YouTube video to MP3."""
-    unique_id = str(uuid.uuid4())
-    filename = os.path.join(DOWNLOAD_FOLDER, unique_id)
-
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'outtmpl': f"{filename}.%(ext)s",
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }]
+def download_audio(url):
+    """Downloads YouTube audio in M4A format (closest to MP3, no FFmpeg)."""
+    options = {
+        'format': 'bestaudio[ext=m4a]/bestaudio/best',
+        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
+        'postprocessors': [],  # No FFmpeg needed
     }
 
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            mp3_filename = f"{filename}.mp3"
-            return mp3_filename, info['title']
-    except Exception as e:
-        return None, str(e)
+    with yt_dlp.YoutubeDL(options) as ydl:
+        info_dict = ydl.extract_info(url, download=True)
+        filename = ydl.prepare_filename(info_dict)
 
-@app.route('/download', methods=['POST'])
-def download():
-    data = request.json
-    url = data.get("url")
-    if not url:
-        return jsonify({"error": "Missing URL"}), 400
+    return filename  # Returns downloaded file path
 
-    mp3_file, title = download_mp3(url)
-    if mp3_file:
-        return send_file(mp3_file, as_attachment=True)
-    else:
-        return jsonify({"error": title}), 500
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if request.method == "POST":
+        url = request.form.get("url")
+        if not url:
+            return render_template("index.html", error="Please enter a valid URL.")
+
+        try:
+            filepath = download_audio(url)
+            return render_template("index.html", filepath=filepath, filename=os.path.basename(filepath))
+        except Exception as e:
+            return render_template("index.html", error=f"Download failed: {str(e)}")
+
+    return render_template("index.html")
+
+@app.route("/download/<filename>")
+def download(filename):
+    """Serve the file for download."""
+    filepath = os.path.join(DOWNLOAD_FOLDER, filename)
+    return send_file(filepath, as_attachment=True)
 
 if __name__ == "__main__":
     app.run(debug=True)
