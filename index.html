@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube to MP3 Converter</title>
+</head>
+<body>
+    <h2>YouTube to MP3 Converter</h2>
+    <input type="text" id="url" placeholder="Enter YouTube URL">
+    <button onclick="downloadMP3()">Convert & Download</button>
+    <p id="status"></p>
+
+    <script>
+        function downloadMP3() {
+            let url = document.getElementById("url").value;
+            if (!url) {
+                alert("Please enter a YouTube URL");
+                return;
+            }
+
+            document.getElementById("status").innerText = "Processing...";
+
+            fetch('/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: url })
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                let link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = "audio.mp3";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                document.getElementById("status").innerText = "Download complete!";
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                document.getElementById("status").innerText = "Error downloading file.";
+            });
+        }
+    </script>
+</body>
+</html>
