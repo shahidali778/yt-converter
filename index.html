@@ -4,12 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube to MP3 Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h2>YouTube to MP3 Converter</h2>
-    <input type="text" id="url" placeholder="Enter YouTube URL">
-    <button onclick="downloadMP3()">Convert & Download</button>
-    <p id="status"></p>
+<body class="bg-gray-900 text-white flex items-center justify-center h-screen">
+
+    <div class="text-center p-6 bg-gray-800 rounded-lg shadow-lg w-96">
+        <h1 class="text-2xl font-bold mb-4">YouTube to MP3 Converter</h1>
+        <input type="text" id="url" placeholder="Enter YouTube URL" 
+               class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-white">
+        <button onclick="downloadMP3()" class="w-full mt-3 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+            Convert & Download
+        </button>
+        <p id="status" class="text-sm mt-3 text-gray-400"></p>
+        
+        <!-- Loading Animation (Hidden Initially) -->
+        <div id="loading" class="hidden mt-4">
+            <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+        </div>
+    </div>
 
     <script>
         function downloadMP3() {
@@ -20,8 +35,9 @@
             }
 
             document.getElementById("status").innerText = "Processing...";
+            document.getElementById("loading").classList.remove("hidden");
 
-            fetch('/download', {
+            fetch('https://your-app-name.onrender.com/download', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url: url })
@@ -35,10 +51,12 @@
                 link.click();
                 document.body.removeChild(link);
                 document.getElementById("status").innerText = "Download complete!";
+                document.getElementById("loading").classList.add("hidden");
             })
             .catch(error => {
                 console.error("Error:", error);
                 document.getElementById("status").innerText = "Error downloading file.";
+                document.getElementById("loading").classList.add("hidden");
             });
         }
     </script>
